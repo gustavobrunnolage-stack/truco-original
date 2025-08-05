@@ -113,7 +113,13 @@ function createRoom() {
   }
   
   gameState.playerName = playerName;
-  showLoading('Criando sala...');
+  
+  // Feedback diferente para jogo gratuito
+  if (betAmount === 0) {
+    showLoading('Criando sala gratuita... Um bot entrará automaticamente!');
+  } else {
+    showLoading('Criando sala...');
+  }
   
   socket.emit('createRoom', { playerName, gameType, betAmount });
 }

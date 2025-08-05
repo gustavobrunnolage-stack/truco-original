@@ -3,61 +3,283 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Truco Online - Mesa Virtual</title>
+  <title>Desafio Truco - Jogo Online</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <!-- Tela de Lobby -->
-  <div id="lobby-screen" class="screen active">
-    <div class="lobby-container">
-      <h1><i class="fas fa-spades"></i> Truco Online <i class="fas fa-hearts"></i></h1>
-      <div class="lobby-content">
-        
-        <!-- Configuração do Jogo -->
-        <div class="game-config">
-          <h2>Configurar Partida</h2>
-          
-          <div class="form-group">
-            <label for="player-name">Seu Nome:</label>
-            <input type="text" id="player-name" placeholder="Digite seu nome" maxlength="15">
-          </div>
-          
-          <div class="form-group">
-            <label for="game-type">Tipo de Truco:</label>
-            <select id="game-type">
-              <option value="paulista">Truco Paulista</option>
-              <option value="mineiro">Truco Mineiro</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="bet-amount">Valor da Aposta (R$):</label>
-            <input type="number" id="bet-amount" placeholder="0.00" min="0" step="0.01">
-            <small class="bet-help">💡 <strong>Dica:</strong> Digite <strong>0</strong> para jogar <span class="free-play">GRÁTIS</span> contra o computador!</small>
-          </div>
-          
-          <div class="lobby-buttons">
-            <button id="create-room" class="btn btn-primary">
-              <i class="fas fa-plus"></i> Criar Sala
-            </button>
-            <button id="join-room" class="btn btn-secondary">
-              <i class="fas fa-sign-in-alt"></i> Entrar em Sala
-            </button>
-          </div>
+  <!-- Tela de Login/Cadastro -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-container">
+      <div class="logo-section">
+        <h1 class="app-title">desafio truco</h1>
+        <div class="logo-accent"></div>
+      </div>
+
+      <!-- Formulário de Login -->
+      <div id="login-form" class="auth-form">
+        <h2>Entrar na sua conta</h2>
+        <div class="form-group">
+          <input type="email" id="login-email" placeholder="Digite seu email..." required>
+        </div>
+        <div class="form-group">
+          <input type="password" id="login-password" placeholder="Digite sua senha..." required>
+        </div>
+        <button id="login-btn" class="btn btn-primary full-width">
+          <i class="fas fa-sign-in-alt"></i> ENTRAR
+        </button>
+        <p class="switch-form">
+          Não tem conta? <span id="show-register">Cadastrar</span>
+        </p>
+      </div>
+
+      <!-- Formulário de Cadastro -->
+      <div id="register-form" class="auth-form" style="display: none;">
+        <h2>Nome de usuário</h2>
+        <div class="form-group">
+          <input type="text" id="register-username" placeholder="Digite seu nome de usuário..." required>
         </div>
         
-        <!-- Info da Sala -->
-        <div id="room-info" class="room-info" style="display: none;">
-          <h3 id="room-title">Sala Criada!</h3>
-          <div class="room-code">
-            <span>Código: </span>
-            <strong id="room-code-display"></strong>
-            <button id="copy-code" class="btn-copy" title="Copiar código">
-              <i class="fas fa-copy"></i>
-            </button>
+        <h2>Email</h2>
+        <div class="form-group">
+          <input type="email" id="register-email" placeholder="Digite seu email..." required>
+        </div>
+        
+        <h2>Confirmar Email</h2>
+        <div class="form-group">
+          <input type="email" id="register-email-confirm" placeholder="Confirme seu email..." required>
+        </div>
+        
+        <h2>Senha</h2>
+        <div class="form-group">
+          <input type="password" id="register-password" placeholder="Digite sua senha..." required>
+          <i class="fas fa-eye password-toggle" onclick="togglePassword('register-password')"></i>
+        </div>
+        
+        <div class="terms-section">
+          <label class="checkbox-container">
+            <input type="checkbox" id="age-confirm" required>
+            <span class="checkmark"></span>
+            Tenho mais de 18 anos
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="terms-confirm" required>
+            <span class="checkmark"></span>
+            Declaro que li e concordo com os <span class="link">termos de uso</span> e <span class="link">política de privacidade</span>
+          </label>
+        </div>
+        
+        <button id="register-btn" class="btn btn-danger full-width">
+          CADASTRAR
+        </button>
+        
+        <p class="switch-form">
+          Já possui uma conta? <span id="show-login">Entrar</span>
+        </p>
+      </div>
+
+      <!-- Suporte WhatsApp -->
+      <div class="support-section">
+        <div class="whatsapp-support">
+          <i class="fab fa-whatsapp"></i>
+          <span>Suporte</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tela Principal (Lobby) -->
+  <div id="lobby-screen" class="screen">
+    <div class="app-container">
+      <!-- Header -->
+      <div class="app-header">
+        <div class="user-info">
+          <div class="user-avatar">
+            <i class="fas fa-user-circle"></i>
           </div>
-          <p id="waiting-text" class="waiting-text">Aguardando outro jogador...</p>
+          <div class="user-details">
+            <div class="username" id="current-username">usuário</div>
+            <div class="user-email" id="current-email">email@exemplo.com</div>
+          </div>
+        </div>
+        <div class="user-balance">
+          <div class="balance-icon">
+            <i class="fas fa-coins"></i>
+          </div>
+          <div class="balance-amount">
+            R$ <span id="user-balance">0,00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="action-buttons">
+        <button id="deposit-btn" class="btn btn-success">
+          <i class="fas fa-plus"></i> Depósito
+        </button>
+        <button id="withdraw-btn" class="btn btn-secondary">
+          <i class="fas fa-minus"></i> Saque
+        </button>
+      </div>
+
+      <!-- Filas de Jogo -->
+      <div class="game-rooms">
+        <div class="room-card free-room">
+          <div class="room-header">
+            <h3>GRÁTIS</h3>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span id="free-players">0</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="free" data-bet-amount="0">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 1</h2>
+            <div class="room-tax">Taxa: 0.07</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>0</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="1">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 2</h2>
+            <div class="room-tax">Taxa: 0.14</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>0</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="2">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 5</h2>
+            <div class="room-tax">Taxa: 0.35</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>0</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="5">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 10</h2>
+            <div class="room-tax">Taxa: 0.7</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>0</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="10">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 25</h2>
+            <div class="room-tax">Taxa: 1.75</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>0</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="25">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 50</h2>
+            <div class="room-tax">Taxa: 3.5</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>1</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="50">
+            JOGAR
+          </button>
+        </div>
+
+        <div class="room-card">
+          <div class="room-header">
+            <h3>Fila</h3>
+            <h2>R$ 100</h2>
+            <div class="room-tax">Taxa: 7</div>
+          </div>
+          <div class="room-info">
+            <div class="room-players">
+              <i class="fas fa-users"></i>
+              <span>1</span>
+            </div>
+          </div>
+          <button class="join-room-btn" data-room-type="bet" data-bet-amount="100">
+            JOGAR
+          </button>
+        </div>
+      </div>
+
+      <!-- Suporte -->
+      <div class="support-section">
+        <div class="whatsapp-support">
+          <i class="fab fa-whatsapp"></i>
+          <span>Suporte</span>
+        </div>
+      </div>
+
+      <!-- Menu Inferior -->
+      <div class="bottom-nav">
+        <div class="nav-item active">
+          <i class="fas fa-bars"></i>
+          <span>Menu</span>
+        </div>
+        <div class="nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <i class="fas fa-trophy"></i>
+          <span>Ranking</span>
         </div>
       </div>
     </div>
@@ -71,7 +293,7 @@
       <div class="game-header">
         <div class="game-info">
           <span class="room-code">Sala: <strong id="current-room-code"></strong></span>
-          <span class="game-type">Tipo: <strong id="current-game-type"></strong></span>
+          <span class="game-type">Tipo: <strong id="current-game-type">Truco Paulista</strong></span>
           <span class="bet-value">Aposta: <strong>R$ <span id="current-bet"></span></strong></span>
         </div>
         <div class="game-controls">
@@ -181,6 +403,85 @@
             <button class="btn-emoji" data-emoji="💪">💪</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de PIX Depósito -->
+  <div id="pix-deposit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <i class="fas fa-qrcode"></i>
+        <span>Depósito via PIX</span>
+        <button class="modal-close" onclick="closeModal('pix-deposit-modal')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="pix-info">
+          <h3>Faça seu depósito</h3>
+          <div class="form-group">
+            <label>Valor do depósito:</label>
+            <input type="number" id="deposit-amount" placeholder="0,00" min="1" step="0.01">
+          </div>
+          <div class="pix-details">
+            <div class="pix-key">
+              <strong>Chave PIX:</strong>
+              <span id="pix-key">sua-chave-pix@exemplo.com</span>
+              <button onclick="copyPixKey()" class="btn-copy">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            <p class="pix-instructions">
+              1. Copie a chave PIX acima<br>
+              2. Abra seu app bancário<br>
+              3. Faça o PIX com o valor desejado<br>
+              4. Envie o comprovante no WhatsApp
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button onclick="openWhatsApp()" class="btn btn-success">
+          <i class="fab fa-whatsapp"></i> Enviar Comprovante
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de PIX Saque -->
+  <div id="pix-withdraw-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <i class="fas fa-money-bill-wave"></i>
+        <span>Saque via PIX</span>
+        <button class="modal-close" onclick="closeModal('pix-withdraw-modal')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="withdraw-info">
+          <h3>Solicitar saque</h3>
+          <div class="current-balance">
+            Saldo disponível: <strong>R$ <span id="modal-balance">0,00</span></strong>
+          </div>
+          <div class="form-group">
+            <label>Valor do saque:</label>
+            <input type="number" id="withdraw-amount" placeholder="0,00" min="1" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Sua chave PIX:</label>
+            <input type="text" id="user-pix-key" placeholder="Digite sua chave PIX">
+          </div>
+          <p class="withdraw-note">
+            Saques são processados em até 24 horas úteis.
+          </p>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button onclick="requestWithdraw()" class="btn btn-primary">
+          <i class="fas fa-paper-plane"></i> Solicitar Saque
+        </button>
       </div>
     </div>
   </div>

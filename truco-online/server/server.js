@@ -8,6 +8,205 @@ let rooms = {};
 
 app.use(express.static('public'));
 
+// Classe para Bot (Jogador Automático)
+class TrucoBot {
+  constructor(gameInstance, playerId) {
+    this.game = gameInstance;
+    this.playerId = playerId;
+    this.name = this.generateBotName();
+    this.difficulty = 'medium'; // easy, medium, hard
+    this.personality = this.generatePersonality();
+  }
+
+  generateBotName() {
+    const names = [
+      'Zé Pereira', 'João Mineiro', 'Pedro Gaúcho', 'Maria Caipira',
+      'Antônio Sertanejo', 'Carlos Matuto', 'Francisco Roceiro',
+      'Sebastião Caboclo', 'Joaquim Caipira', 'Manuel Tropeiro'
+    ];
+    return names[Math.floor(Math.random() * names.length)];
+  }
+
+  generatePersonality() {
+    const personalities = ['aggressive', 'conservative', 'balanced', 'unpredictable'];
+    return personalities[Math.floor(Math.random() * personalities.length)];
+  }
+
+  // Avaliar força da mão (0-100)
+  evaluateHand() {
+    const hand = this.game.playerHands[this.playerId];
+    if (!hand) return 0;
+
+    let score = 0;
+    hand.forEach(card => {
+      if (card.isManilha) {
+        score += 35; // Manilhas valem muito
+      } else if (card.strength >= 8) {
+        score += 20; // Cartas altas (A, 2, 3)
+      } else if (card.strength >= 5) {
+        score += 10; // Cartas médias (Q, J, K)
+      } else {
+        score += 5; // Cartas baixas
+      }
+    });
+
+    return Math.min(score, 100);
+  }
+
+  // Escolher melhor carta para jogar
+  chooseCard() {
+    const hand = this.game.playerHands[this.playerId];
+    if (!hand || hand.length === 0) return -1;
+
+    const playedCards = this.game.playedCards;
+    
+    // Se é o primeiro a jogar na rodada
+    if (playedCards.length === 0) {
+      return this.chooseFirstCard(hand);
+    }
+    
+    // Se é o segundo a jogar (responder)
+    const opponentCard = playedCards[0].card;
+    return this.chooseResponseCard(hand, opponentCard);
+  }
+
+  chooseFirstCard(hand) {
+    const handStrength = this.evaluateHand();
+    
+    // Se mão é forte, joga carta média para "esconder o jogo"
+    if (handStrength > 70) {
+      const mediumCards = hand
+        .map((card, index) => ({ card, index }))
+        .filter(item => item.card.strength >= 5 && item.card.strength <= 8 && !item.card.isManilha)
+        .sort((a, b) => a.card.strength - b.card.strength);
+      
+      if (mediumCards.length > 0) {
+        return mediumCards[0].index;
+      }
+    }
+    
+    // Se mão é fraca, joga a carta mais baixa
+    if (handStrength < 40) {
+      const weakestIndex = hand.reduce((minIndex, card, index) => 
+        card.strength < hand[minIndex].strength ? index : minIndex, 0);
+      return weakestIndex;
+    }
+    
+    // Mão média - joga carta aleatória que não seja manilha
+    const nonManilhas = hand
+      .map((card, index) => ({ card, index }))
+      .filter(item => !item.card.isManilha);
+    
+    if (nonManilhas.length > 0) {
+      return nonManilhas[Math.floor(Math.random() * nonManilhas.length)].index;
+    }
+    
+    return 0; // Fallback
+  }
+
+  chooseResponseCard(hand, opponentCard) {
+    // Tentar ganhar com a menor carta possível
+    const winningCards = hand
+      .map((card, index) => ({ card, index }))
+      .filter(item => item.card.strength > opponentCard.strength)
+      .sort((a, b) => a.card.strength - b.card.strength);
+    
+    if (winningCards.length > 0) {
+      // Se tem carta para ganhar, usa a menor
+      return winningCards[0].index;
+    }
+    
+    // Se não pode ganhar, joga a menor carta
+    const weakestIndex = hand.reduce((minIndex, card, index) => 
+      card.strength < hand[minIndex].strength ? index : minIndex, 0);
+    return weakestIndex;
+  }
+
+  // Decidir se deve pedir truco
+  shouldRequestTruco() {
+    const handStrength = this.evaluateHand();
+    const currentValue = this.game.currentRoundValue;
+    
+    // Baseado na personalidade e força da mão
+    switch (this.personality) {
+      case 'aggressive':
+        return handStrength > 50 && Math.random() > 0.3;
+      case 'conservative':
+        return handStrength > 80 && Math.random() > 0.7;
+      case 'balanced':
+        return handStrength > 65 && Math.random() > 0.5;
+      case 'unpredictable':
+        return Math.random() > 0.4; // Mais imprevisível
+      default:
+        return handStrength > 70 && Math.random() > 0.6;
+    }
+  }
+
+  // Decidir se aceita truco do oponente
+  shouldAcceptTruco() {
+    const handStrength = this.evaluateHand();
+    const roundWins = this.game.roundWins;
+    const myWins = this.playerId === this.game.players[0] ? roundWins.player1 : roundWins.player2;
+    
+    // Se já ganhou uma rodada, é mais corajoso
+    const courage = myWins > 0 ? 15 : 0;
+    
+    switch (this.personality) {
+      case 'aggressive':
+        return (handStrength + courage) > 45;
+      case 'conservative':
+        return (handStrength + courage) > 75;
+      case 'balanced':
+        return (handStrength + courage) > 60;
+      case 'unpredictable':
+        return Math.random() > 0.4;
+      default:
+        return (handStrength + courage) > 65;
+    }
+  }
+
+  // Simular delay humano para jogadas
+  async makeMove() {
+    const delay = 1500 + Math.random() * 2000; // 1.5-3.5 segundos
+    return new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  // Enviar mensagem ocasional no chat
+  sendRandomMessage() {
+    if (Math.random() > 0.85) { // 15% chance
+      const messages = [
+        'Boa jogada!', 'Vamos ver!', 'Interessante...', 'Hmm...', 
+        'Tá difícil!', 'Agora vai!', 'Partiu!', 'Show!', 'Valeu!'
+      ];
+      const message = messages[Math.floor(Math.random() * messages.length)];
+      
+      return {
+        playerId: this.playerId,
+        message,
+        type: 'text',
+        timestamp: Date.now()
+      };
+    }
+    return null;
+  }
+
+  // Enviar emoji ocasional
+  sendRandomEmoji() {
+    if (Math.random() > 0.9) { // 10% chance
+      const emojis = ['😀', '😎', '🤔', '👏', '🔥', '💪'];
+      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+      
+      return {
+        playerId: this.playerId,
+        message: emoji,
+        type: 'emoji',
+        timestamp: Date.now()
+      };
+    }
+    return null;
+  }
+}
+
 // Classe para gerenciar o jogo de Truco
 class TrucoGame {
   constructor(roomId, gameType, betAmount) {

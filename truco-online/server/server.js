@@ -701,6 +701,193 @@ io.on('connection', (socket) => {
   });
 });
 
+// Função para adicionar bot à sala
+function addBotToRoom(roomId, humanSocket) {
+  const room = rooms[roomId];
+  if (!room || room.game.players.length >= 2) return;
+  
+  // Criar ID único para o bot
+  const botId = 'bot_' + Math.random().toString(36).substring(2, 8);
+  
+  // Criar instância do bot
+  const bot = new TrucoBot(room.game, botId);
+  room.bot = bot;
+  
+  // Adicionar bot ao jogo
+  room.game.players.push(botId);
+  room.playerNames[botId] = bot.name;
+  
+  // Iniciar jogo
+  room.game.dealCards();
+  
+  // Notificar jogador humano
+  humanSocket.emit('gameStarted', {
+    players: room.game.players,
+    playerNames: room.playerNames
+  });
+  
+  // Enviar estado inicial
+  humanSocket.emit('gameState', room.game.getGameState(humanSocket.id));
+  
+  console.log(`Bot ${bot.name} adicionado à sala ${roomId}`);
+  
+  // Iniciar lógica do bot
+  startBotLogic(roomId, botId);
+}
+
+// Lógica principal do bot
+async function startBotLogic(roomId, botId) {
+  const room = rooms[roomId];
+  if (!room || !room.bot) return;
+  
+  const bot = room.bot;
+  const game = room.game;
+  
+  // Loop principal do bot
+  const botLoop = setInterval(async () => {
+    if (!rooms[roomId] || game.gamePhase === 'finished') {
+      clearInterval(botLoop);
+      return;
+    }
+    
+    // Verificar se é a vez do bot
+    if (game.players[game.currentPlayerIndex] === botId && game.gamePhase === 'playing') {
+      await bot.makeMove(); // Simular tempo de pensamento
+      
+      // Decidir se pede truco antes de jogar carta
+      if (game.currentRound === 1 && !game.trucoState.requested && bot.shouldRequestTruco()) {
+        const trucoType = game.currentRoundValue === 1 ? 'truco' : 
+                         game.currentRoundValue === 3 ? 'seis' :
+                         game.currentRoundValue === 6 ? 'nove' : 'doze';
+        
+        const success = game.requestTruco(botId, trucoType);
+        if (success) {
+          // Notificar jogador humano
+          const humanSocket = getHumanSocket(roomId);
+          if (humanSocket) {
+            humanSocket.emit('trucoRequested', {
+              requestedBy: botId,
+              trucoType,
+              value: game.trucoState.currentValue
+            });
+            
+            // Adicionar mensagem no chat
+            const chatMessage = bot.sendRandomMessage();
+            if (chatMessage) {
+              humanSocket.emit('chatMessage', {
+                ...chatMessage,
+                playerName: bot.name
+              });
+            }
+          }
+          return; // Esperar resposta antes de jogar carta
+        }
+      }
+      
+      // Jogar carta
+      const cardIndex = bot.chooseCard();
+      if (cardIndex !== -1) {
+        const success = game.playCard(botId, cardIndex);
+        if (success) {
+          // Atualizar estado para jogador humano
+          const humanSocket = getHumanSocket(roomId);
+          if (humanSocket) {
+            humanSocket.emit('gameState', game.getGameState(humanSocket.id));
+            
+            // Enviar mensagem ocasional
+            const message = bot.sendRandomMessage();
+            if (message) {
+              humanSocket.emit('chatMessage', {
+                ...message,
+                playerName: bot.name
+              });
+            }
+            
+            // Enviar emoji ocasional
+            const emoji = bot.sendRandomEmoji();
+            if (emoji) {
+              humanSocket.emit('chatMessage', {
+                ...emoji,
+                playerName: bot.name
+              });
+            }
+          }
+          
+          // Se o jogo terminou
+          if (game.gamePhase === 'finished') {
+            clearInterval(botLoop);
+            if (humanSocket) {
+              humanSocket.emit('gameFinished', {
+                winner: game.scores.player1 >= 12 ? 'player1' : 'player2',
+                finalScores: game.scores
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    // Responder truco se necessário
+    if (game.trucoState.pendingResponse && game.trucoState.requestedBy !== botId) {
+      await bot.makeMove(); // Simular tempo de pensamento
+      
+      const response = bot.shouldAcceptTruco() ? 'accept' : 'reject';
+      const result = game.respondTruco(botId, response);
+      
+      if (result) {
+        const humanSocket = getHumanSocket(roomId);
+        if (humanSocket) {
+          humanSocket.emit('trucoResponse', {
+            respondedBy: botId,
+            response,
+            result
+          });
+          
+          humanSocket.emit('gameState', game.getGameState(humanSocket.id));
+          
+          // Mensagem baseada na resposta
+          let message = null;
+          if (response === 'accept') {
+            const acceptMessages = ['Aceito!', 'Vamos!', 'Topo!', 'Partiu!'];
+            message = acceptMessages[Math.floor(Math.random() * acceptMessages.length)];
+          } else {
+            const rejectMessages = ['Corro!', 'Não dá!', 'Tá difícil!', 'Passo!'];
+            message = rejectMessages[Math.floor(Math.random() * rejectMessages.length)];
+          }
+          
+          if (message) {
+            humanSocket.emit('chatMessage', {
+              playerId: botId,
+              playerName: bot.name,
+              message,
+              type: 'text',
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+    }
+  }, 1000); // Verificar a cada segundo
+}
+
+// Função auxiliar para encontrar socket humano
+function getHumanSocket(roomId) {
+  const room = rooms[roomId];
+  if (!room) return null;
+  
+  const humanPlayerId = room.game.players.find(id => !id.startsWith('bot_'));
+  if (!humanPlayerId) return null;
+  
+  // Encontrar socket do jogador humano
+  const sockets = io.sockets.sockets;
+  for (let socket of sockets.values()) {
+    if (socket.id === humanPlayerId) {
+      return socket;
+    }
+  }
+  return null;
+}
+
 http.listen(PORT, () => {
   console.log(`Servidor Truco rodando na porta ${PORT}`);
 });

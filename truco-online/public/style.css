@@ -1,0 +1,25 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background-color: #028a0f;
+  color: white;
+}
+#game-area {
+  margin: 20px auto;
+  width: 80%;
+  height: 400px;
+  background: #065f0b;
+  border-radius: 10px;
+}
+#bet-area {
+  margin-top: 20px;
+}
+input {
+  padding: 10px;
+  font-size: 16px;
+}
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  font-size: 16px;
+}

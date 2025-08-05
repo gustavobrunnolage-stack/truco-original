@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Desafio Truco</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Desafie seus amigos no Truco Online!</h1>
+  <div id="game-area"></div>
+  <div id="bet-area">
+    <input type="number" id="bet-amount" placeholder="Valor da aposta">
+    <button id="create-room">Criar Sala</button>
+    <button id="join-room">Entrar em Sala</button>
+  </div>
+  <div id="room-info"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

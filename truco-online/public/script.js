@@ -461,6 +461,21 @@ socket.on('roomCreated', (data) => {
   hideLoading();
   gameState.roomId = data.roomId;
   roomCodeDisplay.textContent = data.roomId;
+  
+  const betAmount = parseFloat(betAmountInput.value) || 0;
+  const roomTitle = document.getElementById('room-title');
+  const waitingText = document.getElementById('waiting-text');
+  
+  if (betAmount === 0) {
+    roomTitle.innerHTML = '🤖 Sala Gratuita Criada!';
+    waitingText.innerHTML = '🎮 Um bot está entrando... Prepare-se para jogar!';
+    waitingText.style.color = '#28a745';
+  } else {
+    roomTitle.innerHTML = 'Sala Criada!';
+    waitingText.innerHTML = 'Aguardando outro jogador...';
+    waitingText.style.color = '#ccc';
+  }
+  
   roomInfo.style.display = 'block';
   
   document.getElementById('current-room-code').textContent = data.roomId;

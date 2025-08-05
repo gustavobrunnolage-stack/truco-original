@@ -537,7 +537,9 @@ io.on('connection', (socket) => {
     
     rooms[roomId] = {
       game,
-      playerNames: { [socket.id]: playerName || 'Jogador 1' }
+      playerNames: { [socket.id]: playerName || 'Jogador 1' },
+      bot: null,
+      isFreePlay: betAmount === 0
     };
     
     socket.join(roomId);
@@ -548,6 +550,13 @@ io.on('connection', (socket) => {
     });
     
     console.log(`Sala criada: ${roomId} - ${gameType} - R$${betAmount}`);
+    
+    // Se é jogo gratuito, adicionar bot automaticamente
+    if (betAmount === 0) {
+      setTimeout(() => {
+        addBotToRoom(roomId, socket);
+      }, 2000); // Espera 2 segundos para adicionar o bot
+    }
   });
 
   // Entrar na sala
